@@ -7,11 +7,16 @@
 
 import type { Scene, CommitSceneInput } from '@/types/scene';
 import type { Asset3D } from '@/types/asset';
+import type { Placement, CreatePlacementInput } from '@/types/placement';
 import { generateId } from './id';
+
+/** Current renderer version for placements */
+const RENDERER_VERSION = '1.0.0';
 
 /** In-memory storage maps */
 const scenes = new Map<string, Scene>();
 const assets = new Map<string, Asset3D>();
+const placements = new Map<string, Placement>();
 
 /** Demo assets seeded on init */
 const DEMO_ASSETS: Asset3D[] = [
@@ -139,11 +144,64 @@ function getAsset(assetId: string): Asset3D | null {
 }
 
 /**
+ * Create a new placement.
+ */
+function createPlacement(input: CreatePlacementInput): Placement {
+  const now = new Date();
+  const placement: Placement = {
+    id: generateId('placement'),
+    sceneId: input.sceneId,
+    assetId: input.assetId,
+    transform: input.transform,
+    render: input.render,
+    variantId: input.variantId ?? null,
+    rendererVersion: RENDERER_VERSION,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  placements.set(placement.id, placement);
+  return placement;
+}
+
+/**
+ * Get a placement by ID.
+ */
+function getPlacement(placementId: string): Placement | null {
+  return placements.get(placementId) ?? null;
+}
+
+/**
+ * Update an existing placement.
+ */
+function updatePlacement(
+  placementId: string,
+  updates: Partial<CreatePlacementInput>
+): Placement {
+  const existing = placements.get(placementId);
+  if (!existing) {
+    throw new Error(`Placement not found: ${placementId}`);
+  }
+
+  const updated: Placement = {
+    ...existing,
+    transform: updates.transform ?? existing.transform,
+    render: updates.render ?? existing.render,
+    variantId: updates.variantId !== undefined ? updates.variantId ?? null : existing.variantId,
+    updatedAt: new Date(),
+  };
+
+  placements.set(placementId, updated);
+  return updated;
+}
+
+/**
  * Clear all data (for testing).
  */
 function clear(): void {
   scenes.clear();
   assets.clear();
+  placements.clear();
   seedAssets(); // Re-seed demo assets
 }
 
@@ -153,5 +211,8 @@ export const store = {
   getScene,
   getAssets,
   getAsset,
+  createPlacement,
+  getPlacement,
+  updatePlacement,
   clear,
 };
