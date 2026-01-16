@@ -148,3 +148,102 @@ describe('AssetStore', () => {
     });
   });
 });
+
+describe('ExportStore', () => {
+  beforeEach(() => {
+    store.clear();
+  });
+
+  describe('createExport', () => {
+    it('creates an export with a prefixed ID', () => {
+      const exp = store.createExport({
+        placementId: 'plc_test123',
+        width: 2048,
+        height: 1536,
+        renderSettingsHash: 'abc123',
+      });
+      expect(exp.id).toMatch(/^exp_/);
+    });
+
+    it('stores placement reference', () => {
+      const exp = store.createExport({
+        placementId: 'plc_test456',
+        width: 1920,
+        height: 1080,
+        renderSettingsHash: 'def456',
+      });
+      expect(exp.placementId).toBe('plc_test456');
+    });
+
+    it('stores dimensions', () => {
+      const exp = store.createExport({
+        placementId: 'plc_test',
+        width: 2048,
+        height: 1536,
+        renderSettingsHash: 'hash',
+      });
+      expect(exp.width).toBe(2048);
+      expect(exp.height).toBe(1536);
+    });
+
+    it('stores render settings hash', () => {
+      const exp = store.createExport({
+        placementId: 'plc_test',
+        width: 2048,
+        height: 1536,
+        renderSettingsHash: 'my_hash_123',
+      });
+      expect(exp.renderSettingsHash).toBe('my_hash_123');
+    });
+
+    it('initializes with null URL', () => {
+      const exp = store.createExport({
+        placementId: 'plc_test',
+        width: 2048,
+        height: 1536,
+        renderSettingsHash: 'hash',
+      });
+      expect(exp.url).toBeNull();
+    });
+  });
+
+  describe('commitExport', () => {
+    it('stores the exported URL', () => {
+      const exp = store.createExport({
+        placementId: 'plc_test',
+        width: 2048,
+        height: 1536,
+        renderSettingsHash: 'hash',
+      });
+
+      store.commitExport(exp.id, { url: '/exports/final.png' });
+
+      const retrieved = store.getExport(exp.id);
+      expect(retrieved?.url).toBe('/exports/final.png');
+    });
+
+    it('throws for non-existent export', () => {
+      expect(() => {
+        store.commitExport('exp_nonexistent', { url: '/test.png' });
+      }).toThrow(/not found/i);
+    });
+  });
+
+  describe('getExport', () => {
+    it('returns null for non-existent export', () => {
+      const exp = store.getExport('exp_nonexistent');
+      expect(exp).toBeNull();
+    });
+
+    it('returns the export for valid ID', () => {
+      const created = store.createExport({
+        placementId: 'plc_test',
+        width: 1920,
+        height: 1080,
+        renderSettingsHash: 'hash',
+      });
+      const retrieved = store.getExport(created.id);
+      expect(retrieved?.id).toBe(created.id);
+    });
+  });
+});
