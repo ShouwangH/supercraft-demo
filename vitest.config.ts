@@ -8,6 +8,11 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['src/**/*.test.{ts,tsx}'],
+    environmentMatchGlobs: [
+      // Use jsdom for component tests
+      ['src/components/**/*.test.tsx', 'jsdom'],
+    ],
+    setupFiles: ['./src/test/setup.ts'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'scripts/'],
