@@ -121,3 +121,69 @@ describe('createRenderPlan', () => {
     });
   });
 });
+
+describe('render plan integration', () => {
+  it('same scene calibration + placement produces identical plan', () => {
+    // Simulate scene with user calibration
+    const sceneCalibration = {
+      userCameraFovDeg: 55,
+      userPitchDeg: 5,
+    };
+
+    // Simulate placement render settings
+    const placementRender = {
+      shadowEnabled: true,
+      occlusionEnabled: false,
+    };
+
+    const input: RenderPlanInput = {
+      fov: sceneCalibration.userCameraFovDeg,
+      pitch: sceneCalibration.userPitchDeg,
+      cameraZ: 5,
+      shadowEnabled: placementRender.shadowEnabled,
+      occlusionEnabled: placementRender.occlusionEnabled,
+    };
+
+    const plan1 = createRenderPlan(input);
+    const plan2 = createRenderPlan(input);
+
+    expect(JSON.stringify(plan1)).toBe(JSON.stringify(plan2));
+  });
+
+  it('pitch slider value maps directly to camera pitch', () => {
+    const pitchValues = [-15, -10, -5, 0, 5, 10, 15];
+
+    for (const pitch of pitchValues) {
+      const plan = createRenderPlan({ pitch, cameraZ: 5 });
+      expect(plan.cameraConfig.pitch).toBe(pitch);
+    }
+  });
+
+  it('shadow toggle reflects in render plan', () => {
+    const planWithShadow = createRenderPlan({
+      pitch: 0,
+      cameraZ: 5,
+      shadowEnabled: true,
+    });
+
+    const planWithoutShadow = createRenderPlan({
+      pitch: 0,
+      cameraZ: 5,
+      shadowEnabled: false,
+    });
+
+    expect(planWithShadow.compositingSettings.shadowEnabled).toBe(true);
+    expect(planWithoutShadow.compositingSettings.shadowEnabled).toBe(false);
+  });
+
+  it('uses default fov 50 when scene has no user calibration', () => {
+    // When scene.userCameraFovDeg is null, use default
+    const plan = createRenderPlan({
+      fov: undefined, // No user FOV set
+      pitch: 0,
+      cameraZ: 5,
+    });
+
+    expect(plan.cameraConfig.fov).toBe(50);
+  });
+});
