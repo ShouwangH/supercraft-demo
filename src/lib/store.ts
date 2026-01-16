@@ -8,6 +8,7 @@
 import type { Scene, CommitSceneInput } from '@/types/scene';
 import type { Asset3D } from '@/types/asset';
 import type { Placement, CreatePlacementInput } from '@/types/placement';
+import type { Export, ExportInitInput, ExportCommitInput } from '@/types/export';
 import { generateId } from './id';
 
 /** Current renderer version for placements */
@@ -17,6 +18,7 @@ const RENDERER_VERSION = '1.0.0';
 const scenes = new Map<string, Scene>();
 const assets = new Map<string, Asset3D>();
 const placements = new Map<string, Placement>();
+const exports = new Map<string, Export>();
 
 /** Demo assets seeded on init */
 const DEMO_ASSETS: Asset3D[] = [
@@ -196,12 +198,58 @@ function updatePlacement(
 }
 
 /**
+ * Create a new export.
+ */
+function createExport(input: ExportInitInput): Export {
+  const now = new Date();
+  const exp: Export = {
+    id: generateId('export'),
+    placementId: input.placementId,
+    type: 'image/png',
+    url: null,
+    width: input.width,
+    height: input.height,
+    renderSettingsHash: input.renderSettingsHash,
+    createdAt: now,
+  };
+
+  exports.set(exp.id, exp);
+  return exp;
+}
+
+/**
+ * Commit an export after the image is uploaded.
+ */
+function commitExport(exportId: string, input: ExportCommitInput): Export {
+  const exp = exports.get(exportId);
+  if (!exp) {
+    throw new Error(`Export not found: ${exportId}`);
+  }
+
+  const updated: Export = {
+    ...exp,
+    url: input.url,
+  };
+
+  exports.set(exportId, updated);
+  return updated;
+}
+
+/**
+ * Get an export by ID.
+ */
+function getExport(exportId: string): Export | null {
+  return exports.get(exportId) ?? null;
+}
+
+/**
  * Clear all data (for testing).
  */
 function clear(): void {
   scenes.clear();
   assets.clear();
   placements.clear();
+  exports.clear();
   seedAssets(); // Re-seed demo assets
 }
 
@@ -214,5 +262,8 @@ export const store = {
   createPlacement,
   getPlacement,
   updatePlacement,
+  createExport,
+  commitExport,
+  getExport,
   clear,
 };
